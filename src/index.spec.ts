@@ -11,7 +11,7 @@ import * as path from 'path';
  */
 const CdkOut = path.resolve('cdk.out');
 
-describe('apigateway-test', () => {
+describe('given cdk stack which creates two resources with nested paths and Ok(200) handlers', () => {
   /**
    * Stack to deploy the construct for tests
    */
@@ -51,7 +51,7 @@ describe('apigateway-test', () => {
     await destroyStack({name: id, app, exclusively: true});
   });
 
-  it('should get response from apigateway for both resources', withStack({name: id, app, exclusively: true}, async ({environment, stack}) => {
+  it('should get response 200 from apigateway for both resources', withStack({name: id, app, exclusively: true}, async ({environment, stack}) => {
     // Given
     const resourceOneUrl = stack.Outputs!!.find(it => it.OutputKey === 'ResourceOneUrl')!!.OutputValue;
     const resourceTwoUrl = stack.Outputs!!.find(it => it.OutputKey === 'ResourceTwoUrl')!!.OutputValue;
