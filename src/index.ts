@@ -11,7 +11,8 @@ import {
   PassthroughBehavior
 } from '@aws-cdk/aws-apigateway';
 import * as lambda from '@aws-cdk/aws-lambda';
-import cdk, {Construct} from '@aws-cdk/core';
+import * as cdk from '@aws-cdk/core';
+import {Construct} from '@aws-cdk/core';
 
 // Allowed headers
 // const CORS_DEFAULT_ALLOW_HEADERS = [
@@ -33,7 +34,7 @@ export class ApiGatewayBuilder extends Construct {
 
   private readonly api: apigateway.LambdaRestApi;
 
-  private readonly resourceBuilders: { [key: string]: ApiResourceBuilder } = {};
+  private readonly resourceBuilders: Map<string, ApiResourceBuilder>;
 
   public get url(): string {
     return this.api.url;
@@ -45,6 +46,7 @@ export class ApiGatewayBuilder extends Construct {
     super(scope, props.id);
 
     // ApiGateway instance
+    this.resourceBuilders = new Map();
     this.api = new apigateway.RestApi(this, props.id);
   }
 
@@ -63,16 +65,16 @@ export class ApiGatewayBuilder extends Construct {
       return this.root();
     }
 
-    if (!(path in this.resourceBuilders)) {
+    if (!this.resourceBuilders.has(path)) {
       resourceBuilder(path);
     }
 
-    return this.resourceBuilders[path];
+    return this.resourceBuilders.get(path);
   }
 
   public resourceUrl(path: string) {
 
-    if (!(path in this.resourceBuilders)) {
+    if (!this.resourceBuilders.has(path)) {
       throw new NotFoundError(`Fail to find resource with path ${path}`);
     }
     return this.api.urlForPath(path);
@@ -82,7 +84,9 @@ export class ApiGatewayBuilder extends Construct {
    * Returns root resource
    */
   public root(): ApiResourceBuilder {
-    return this.resourceBuilders['/'] = new ApiResourceBuilder(this, this.api.root);
+    const resourceBuilder = new ApiResourceBuilder(this, this.api.root);
+    this.resourceBuilders.set('/', resourceBuilder);
+    return resourceBuilder
   }
 
   // should be an arrow function
@@ -95,12 +99,12 @@ export class ApiGatewayBuilder extends Construct {
       if (segment) {
         const basePath = path.substring(0, path.indexOf(segment));
         const resourcePath = basePath + segment;
-        builder = this.resourceBuilders[resourcePath];
+        builder = this.resourceBuilders.get(resourcePath);
 
         // Adds new resource when builder not found
         if (!builder) {
           builder = new ApiResourceBuilder(this, parent.addResource(segment));
-          this.resourceBuilders[resourcePath] = builder;
+          this.resourceBuilders.set(resourcePath, builder);
         }
         parent = builder.resource;
       }
@@ -136,33 +140,9 @@ export class ApiResourceBuilder {
     return this.apiGatewayBuilder;
   }
 
-  /**
-   * Adds lambda PROXY integration to current API Gateway
-   *
-   * @param httpMethod
-   * @param handler
-   * @param options
-   */
-  public lambdaProxy(httpMethod: string,
-                     handler: lambda.Function,
-                     options?: LambdaIntegrationOptions): ApiResourceBuilder {
+  public respond200 = this.respondOk;
 
-    const integrationProps: LambdaIntegrationOptions = {
-      // True is the default value, just to be explicit
-      proxy: true,
-      // Overrides
-      ...options,
-    };
-
-    // Memorizing the handler
-    this.handler = handler;
-
-    // Adding method
-    this.resource.addMethod(httpMethod, new apigateway.LambdaIntegration(handler, integrationProps));
-    return this;
-  }
-
-  public status200(httpMethod: string): ApiResourceBuilder {
+  public respondOk(httpMethod: string): ApiResourceBuilder {
 
     const mockIntegration = new apigateway.MockIntegration({
       passthroughBehavior: PassthroughBehavior.NEVER,
@@ -192,6 +172,31 @@ export class ApiResourceBuilder {
     return this;
   }
 
+  /**
+   * Adds lambda PROXY integration to current API Gateway
+   *
+   * @param httpMethod
+   * @param handler
+   * @param options
+   */
+  public proxyLambda(httpMethod: string,
+                     handler: lambda.Function,
+                     options?: LambdaIntegrationOptions): ApiResourceBuilder {
+
+    const integrationProps: LambdaIntegrationOptions = {
+      // True is the default value, just to be explicit
+      proxy: true,
+      // Overrides
+      ...options,
+    };
+
+    // Memorizing the handler
+    this.handler = handler;
+
+    // Adding method
+    this.resource.addMethod(httpMethod, new apigateway.LambdaIntegration(handler, integrationProps));
+    return this;
+  }
 
   /**
    * Adds HTTP proxy integration to API Gateway
@@ -201,7 +206,7 @@ export class ApiResourceBuilder {
    * @param integrationProps
    * @param methodProps
    */
-  public httpProxy(httpMethod: string,
+  public proxyHttp(httpMethod: string,
                    url: string, integrationProps?: HttpIntegrationProps,
                    methodProps?: MethodOptions): ApiResourceBuilder {
     //
