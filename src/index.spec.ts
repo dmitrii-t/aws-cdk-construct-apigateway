@@ -22,18 +22,18 @@ describe('apigateway-test', () => {
       const producingConstruct = new ApiGatewayBuilder(this, {id: 'ApiGatewayTest'});
 
       // Child resource one
-      // producingConstruct.resource('/test/child/one')
+      producingConstruct.resource('/test/child/one')
         // .addCors({allowOrigins: ['*'], allowMethods: ['GET']})
-        // .respondOk('GET');
+        .respondOk('GET');
 
       // Child resource two
-      // producingConstruct.resource('/test/child/two')
+      producingConstruct.resource('/test/child/two')
         // .addCors({allowOrigins: ['*'], allowMethods: ['GET']})
-        // .respondOk('GET');
+        .respondOk('GET');
 
       // Outputs
-      // new CfnOutput(this, 'ResourceOneUrl', {value: producingConstruct.resourceUrl('/test/child/one')});
-      // new CfnOutput(this, 'ResourceTwoUrl', {value: producingConstruct.resourceUrl('/test/child/two')});
+      new CfnOutput(this, 'ResourceOneUrl', {value: producingConstruct.resourceUrl('/test/child/one')});
+      new CfnOutput(this, 'ResourceTwoUrl', {value: producingConstruct.resourceUrl('/test/child/two')});
     }
   }
 

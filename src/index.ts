@@ -34,20 +34,19 @@ export class ApiGatewayBuilder extends Construct {
 
   private readonly api: apigateway.LambdaRestApi;
 
-  private readonly resourceBuilders: Map<string, ApiResourceBuilder>;
+  private readonly resourceBuilders: { [key: string]: ApiResourceBuilder };
 
-  public get url(): string {
-    return this.api.url;
-  }
-
-  constructor(private readonly scope: cdk.Construct,
-              private readonly props: ApiGatewayWithHandlerProps) {
+  constructor(scope: cdk.Construct, props: ApiGatewayWithHandlerProps) {
 
     super(scope, props.id);
 
     // ApiGateway instance
-    this.resourceBuilders = new Map();
     this.api = new apigateway.RestApi(this, props.id);
+    this.resourceBuilders = {};
+  }
+
+  public get url(): string {
+    return this.api.url;
   }
 
   /**
@@ -57,7 +56,7 @@ export class ApiGatewayBuilder extends Construct {
    * @param resourceBuilder
    */
   public resource(path: string,
-                  resourceBuilder: (path: string) => ApiResourceBuilder = this.defaultResourceProvider
+                  resourceBuilder: (path: string) => ApiResourceBuilder = this.defaultResourceProvider.bind(this)
   ): ApiResourceBuilder {
 
     // Returns the root if path is just '/'
@@ -65,16 +64,15 @@ export class ApiGatewayBuilder extends Construct {
       return this.root();
     }
 
-    if (!this.resourceBuilders.has(path)) {
+    if (!(path in this.resourceBuilders)) {
       resourceBuilder(path);
     }
 
-    return this.resourceBuilders.get(path);
+    return this.resourceBuilders[path];
   }
 
   public resourceUrl(path: string) {
-
-    if (!this.resourceBuilders.has(path)) {
+    if (!(path in this.resourceBuilders)) {
       throw new NotFoundError(`Fail to find resource with path ${path}`);
     }
     return this.api.urlForPath(path);
@@ -84,13 +82,11 @@ export class ApiGatewayBuilder extends Construct {
    * Returns root resource
    */
   public root(): ApiResourceBuilder {
-    const resourceBuilder = new ApiResourceBuilder(this, this.api.root);
-    this.resourceBuilders.set('/', resourceBuilder);
-    return resourceBuilder
+    return this.resourceBuilders['/'] = new ApiResourceBuilder(this, this.api.root);
   }
 
   // should be an arrow function
-  private defaultResourceProvider = (path: string): ApiResourceBuilder => {
+  private defaultResourceProvider(path: string): ApiResourceBuilder {
     let parent = this.api.root;
     let builder: ApiResourceBuilder;
 
@@ -99,12 +95,12 @@ export class ApiGatewayBuilder extends Construct {
       if (segment) {
         const basePath = path.substring(0, path.indexOf(segment));
         const resourcePath = basePath + segment;
-        builder = this.resourceBuilders.get(resourcePath);
+        builder = this.resourceBuilders[resourcePath];
 
         // Adds new resource when builder not found
         if (!builder) {
           builder = new ApiResourceBuilder(this, parent.addResource(segment));
-          this.resourceBuilders.set(resourcePath, builder);
+          this.resourceBuilders[resourcePath] = builder;
         }
         parent = builder.resource;
       }
@@ -140,10 +136,7 @@ export class ApiResourceBuilder {
     return this.apiGatewayBuilder;
   }
 
-  public respond200 = this.respondOk;
-
-  public respondOk(httpMethod: string): ApiResourceBuilder {
-
+  public respond200(httpMethod: string): ApiResourceBuilder {
     const mockIntegration = new apigateway.MockIntegration({
       passthroughBehavior: PassthroughBehavior.NEVER,
       requestTemplates: {
@@ -170,6 +163,10 @@ export class ApiResourceBuilder {
 
     this.resource.addMethod(httpMethod, mockIntegration, method);
     return this;
+  }
+
+  public respondOk(httpMethod: string): ApiResourceBuilder {
+    return this.respond200(httpMethod);
   }
 
   /**
