@@ -1,4 +1,4 @@
-### Neat 'n' sweet :lollipop: AWS ApiGateway builder
+### Neat'n'sweet AWS ApiGateway builder
  
 Use the builder to make Lambda handler to serve HTTP requests or to create HTTP proxy 
 for server-based backend. Set CORS policy and usage plans and more.
