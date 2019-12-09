@@ -30,11 +30,13 @@ export class NotFoundError extends Error {
  * Construct to build and configure API Gateway
  *
  */
-export class ApiGatewayBuilder extends Construct {
+export class ApiGatewayConstruct extends Construct {
 
-  private readonly api: apigateway.LambdaRestApi;
+  private readonly api: apigateway.RestApi;
 
   private readonly resourceBuilders: { [key: string]: ApiResourceBuilder };
+
+  readonly scope: Construct;
 
   constructor(scope: cdk.Construct, props: ApiGatewayWithHandlerProps) {
 
@@ -42,6 +44,7 @@ export class ApiGatewayBuilder extends Construct {
 
     // ApiGateway instance
     this.api = new apigateway.RestApi(this, props.id);
+    this.scope = scope;
     this.resourceBuilders = {};
   }
 
@@ -122,7 +125,7 @@ export class ApiResourceBuilder {
 
   private handler: lambda.Function | undefined;
 
-  constructor(private apiGatewayBuilder: ApiGatewayBuilder,
+  constructor(private apiGatewayBuilder: ApiGatewayConstruct,
               public resource: IResource) {
   }
 
@@ -132,7 +135,7 @@ export class ApiResourceBuilder {
    *
    *
    */
-  public build(): ApiGatewayBuilder {
+  public build(): ApiGatewayConstruct {
     return this.apiGatewayBuilder;
   }
 
@@ -173,11 +176,11 @@ export class ApiResourceBuilder {
    * Adds lambda PROXY integration to current API Gateway
    *
    * @param httpMethod
-   * @param handler
+   * @param handlerProps
    * @param options
    */
   public proxyLambda(httpMethod: string,
-                     handler: lambda.Function,
+                     handlerProps: lambda.FunctionProps,
                      options?: LambdaIntegrationOptions): ApiResourceBuilder {
 
     const integrationProps: LambdaIntegrationOptions = {
@@ -188,10 +191,12 @@ export class ApiResourceBuilder {
     };
 
     // Memorizing the handler
-    this.handler = handler;
+
+    // Queue handler
+    this.handler = new lambda.Function(this.apiGatewayBuilder.scope, 'QueueHandler', handlerProps);
 
     // Adding method
-    this.resource.addMethod(httpMethod, new apigateway.LambdaIntegration(handler, integrationProps));
+    this.resource.addMethod(httpMethod, new apigateway.LambdaIntegration(this.handler, integrationProps));
     return this;
   }
 

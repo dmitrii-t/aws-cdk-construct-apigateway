@@ -10,7 +10,9 @@
     "node": ">=10.x"
   },
   "scripts": {
-    "build": "TS_NODE_PROJECT=tsconfig.json babel ./src --out-dir ./dist --extensions \".ts\" --ignore \"src/**/*.spec.ts\" --source-maps",
+    "": "TS_NODE_PROJECT=tsconfig.json babel ./src --out-dir ./dist --extensions \".ts\" --ignore \"src/**/*.spec.ts\" --source-maps",
+    "clean": "rimraf ./dist",
+    "build": "TS_NODE_PROJECT=tsconfig.json NODE_ENV=production env-cmd webpack -p",
     "test": "TS_NODE_PROJECT=tsconfig.json env-cmd mocha --timeout 600000 --require ./babel-hook.js \"./src/**/*.spec.ts\"",
     "lint": "tslint -c tslinton 'src/**/*.ts'",
     "type": "tsc"
@@ -42,6 +44,7 @@
     "@aws-cdk/aws-sns": "1.17.1",
     "@aws-cdk/aws-sqs": "1.17.1",
     "@aws-cdk/core": "1.17.1",
+    "@babel/polyfill": "^7.7.0",
     "@babel/core": "^7.7.0",
     "@babel/preset-env": "^7.7.0",
     "@babel/preset-typescript": "^7.7.0",
@@ -53,6 +56,7 @@
     "@types/mocha": "^5.2.7",
     "@types/node": "^10.14.10",
     "@types/node-fetch": "^2.5.3",
+    "babel-loader": "^8.0.6",
     "cdk-util": "github:dtcimbal/cdk-util#1.1.2",
     "chai": "^4.2.0",
     "cross-env": "^5.2.0",
@@ -63,7 +67,13 @@
     "tsconfig-paths": "^3.8.0",
     "tslint": "^5.12.1",
     "typescript": "^3.7.2",
-    "tslib": "^1.9.3"
+    "tslib": "^1.9.3",
+    "webpack": "^4.32.2",
+    "webpack-bundle-analyzer": "^3.5.2",
+    "webpack-cli": "^3.2.1",
+    "webpack-dev-server": "^3.1.14",
+    "webpack-manifest-plugin": "^2.0.4",
+    "webpack-node-externals": "^1.7.2"
   },
   "dependencies": {
     "aws-cdk": "1.17.1"
