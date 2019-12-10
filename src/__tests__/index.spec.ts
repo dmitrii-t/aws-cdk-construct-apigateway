@@ -13,7 +13,7 @@ import {Code, Runtime} from "@aws-cdk/aws-lambda";
 const CdkOut = path.resolve('cdk.out');
 
 const lambdaProps = {
-  handler: 'lambda.handleApiGatewayEvent',
+  handler: 'lambda.echoApiGatewayEventHandler',
   runtime: Runtime.NODEJS_10_X,
   code: Code.fromAsset('./dist'),
 };
@@ -22,32 +22,32 @@ describe('given cdk stack which creates two resources with nested paths and Ok(2
   /**
    * Stack to deploy the construct for tests
    */
-  class ApiGatewayTest extends Stack {
+  class TestStack extends Stack {
     constructor(scope: App, id: string) {
       super(scope, id);
 
-      const producingConstruct = new ApiGatewayConstruct(this, {id: 'ApiGatewayTest'});
+      const construct = new ApiGatewayConstruct(this, {id: 'ApiGatewayTest'});
 
       // Child resource one
-      producingConstruct.resource('/test/child/one')
+      construct.resource('/test/child/one')
         // .addCors({allowOrigins: ['*'], allowMethods: ['GET']})
         .respondOk('GET');
 
       // Child resource two
-      producingConstruct.resource('/test/child/two')
+      construct.resource('/test/child/two')
         // .addCors({allowOrigins: ['*'], allowMethods: ['GET']})
         .proxyLambda('GET',  lambdaProps);
 
       // Outputs
-      new CfnOutput(this, 'ResourceOneUrl', {value: producingConstruct.resourceUrl('/test/child/one')});
-      new CfnOutput(this, 'ResourceTwoUrl', {value: producingConstruct.resourceUrl('/test/child/two')});
-      new CfnOutput(this, 'ResourceTwoHandlerName', {value: producingConstruct.resource('/test/child/two').handlerName});
+      new CfnOutput(this, 'ResourceOneUrl', {value: construct.resourceUrl('/test/child/one')});
+      new CfnOutput(this, 'ResourceTwoUrl', {value: construct.resourceUrl('/test/child/two')});
+      new CfnOutput(this, 'ResourceTwoHandlerName', {value: construct.resource('/test/child/two').handlerName});
     }
   }
 
   const id = 'ApiGatewayTest';
   const app = new App({outdir: CdkOut});
-  const stack = new ApiGatewayTest(app, id);
+  const stack = new TestStack(app, id);
 
   // Setup task
   before(async () => {

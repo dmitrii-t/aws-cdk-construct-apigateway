@@ -1,15 +1,16 @@
-### Neat'n'sweet AWS ApiGateway builder
+### Neat'n'sweet AWS ApiGateway construct
  
-Use the builder to make Lambda handler to serve HTTP requests or to create HTTP proxy 
-for server-based backend. Set CORS policy and usage plans and more.
+Use the construct to create a Lambda handler to serve HTTP requests or
+to create HTTP proxy for server-based backend. Set CORS policy, usage
+plans and more.
 
 Run tests with the following command 
 
 ```bash
-npm run test
+npm run clean && npm run build && npm run test
 ```
 
-Use the builder to define the resource and a handler for that resource
+Use the construct to define the resource and a handler for that resource
 
 ```typescript
 new ApiGatewayBuilder(this, {id: 'ApiGateway'})

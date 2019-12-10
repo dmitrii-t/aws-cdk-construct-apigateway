@@ -19,6 +19,6 @@ export function withApiGatewayEventHandler(bodyHandler: (body: Body) => void) {
   }
 }
 
-export const handleApiGatewayEvent = withApiGatewayEventHandler((body) => {
+export const echoApiGatewayEventHandler = withApiGatewayEventHandler((body) => {
   console.log(`processing message body ${JSON.stringify(body)}`);
 });
